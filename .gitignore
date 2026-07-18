@@ -2,3 +2,4 @@
 __pycache__/
 *.pyc
 robo_stock.db
+robot_shift.db
