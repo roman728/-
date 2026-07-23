@@ -25,6 +25,7 @@ from .work_sessions import (
     get_active_session,
     start_session,
 )
+from .seed import seed_initial_users
 
 __all__ = [
     "get_connection",
@@ -46,4 +47,5 @@ __all__ = [
     "remove_incomplete_frame",
     "get_shift_report_data",
     "get_frame_report_data",
+    "seed_initial_users",
 ]
