@@ -34,6 +34,7 @@ async def start_handler(message: Message) -> None:
         )
         return
 
+    # Главный оператор
     if user["role"] == "operator":
         active_session = get_active_session(user["id"])
 
@@ -46,12 +47,13 @@ async def start_handler(message: Message) -> None:
         else:
             await message.answer(
                 f"Здравствуйте, {user['full_name']}!\n\n"
-                "Нажмите кнопку, чтобы начать работу.",
+                "Нажмите кнопку, чтобы начать смену.",
                 reply_markup=operator_start_keyboard(),
             )
 
         return
 
+    # Инженер
     if user["role"] == "engineer":
         await message.answer(
             f"Здравствуйте, {user['full_name']}!\n\n"
@@ -60,12 +62,26 @@ async def start_handler(message: Message) -> None:
         )
         return
 
+    # Администратор получает доступ к демонстрации
+    # полного рабочего цикла оператора.
     if user["role"] == "admin":
-        await message.answer(
-            f"Здравствуйте, {user['full_name']}!\n\n"
-            "Ваша роль: ⚙️ Администратор",
-            reply_markup=engineer_main_keyboard(),
-        )
+        active_session = get_active_session(user["id"])
+
+        if active_session is not None:
+            await message.answer(
+                f"Здравствуйте, {user['full_name']}!\n\n"
+                "Ваша роль: ⚙️ Администратор\n"
+                "У вас уже есть активная смена.",
+                reply_markup=operator_main_keyboard(),
+            )
+        else:
+            await message.answer(
+                f"Здравствуйте, {user['full_name']}!\n\n"
+                "Ваша роль: ⚙️ Администратор\n\n"
+                "Нажмите кнопку, чтобы начать демонстрацию.",
+                reply_markup=operator_start_keyboard(),
+            )
+
         return
 
     await message.answer(

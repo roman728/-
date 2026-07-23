@@ -27,10 +27,11 @@ router = Router()
 async def start_work_session_handler(message: Message) -> None:
     user = get_user_by_telegram_id(message.from_user.id)
 
-    if user is None or user["role"] != "operator":
-        await message.answer(
-            "⛔ Эта команда доступна только оператору."
-        )
+    if user is None or user["role"] not in {
+    "operator",
+    "admin",
+}:
+            
         return
 
     session_id = start_session(user["id"])

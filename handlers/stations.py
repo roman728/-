@@ -25,6 +25,14 @@ from states import FrameStates
 router = Router()
 
 
+def has_operator_access(user: dict | None) -> bool:
+    """Оператор и администратор могут работать со станциями."""
+    return (
+        user is not None
+        and user["role"] in {"operator", "admin"}
+    )
+
+
 async def send_station_state(
     message: Message,
     station_number: int,
@@ -48,7 +56,9 @@ async def send_station_state(
             f"Рама №{frame_number}\n"
             "Статус: 📦 загружена\n\n"
             "Следующее действие:",
-            reply_markup=station_loaded_keyboard(station_number),
+            reply_markup=station_loaded_keyboard(
+                station_number
+            ),
         )
         return
 
@@ -57,7 +67,9 @@ async def send_station_state(
             f"🏭 Станция {station_number}\n\n"
             f"Рама №{frame_number}\n"
             "Статус: 🔥 идёт сварка",
-            reply_markup=station_welding_keyboard(station_number),
+            reply_markup=station_welding_keyboard(
+                station_number
+            ),
         )
         return
 
@@ -80,9 +92,10 @@ async def open_station_handler(
 ) -> None:
     user = get_user_by_telegram_id(message.from_user.id)
 
-    if user is None or user["role"] != "operator":
+    if not has_operator_access(user):
         await message.answer(
-            "⛔ Эта команда доступна только оператору."
+            "⛔ Эта команда доступна только оператору "
+            "или администратору."
         )
         return
 
@@ -110,17 +123,22 @@ async def open_station_handler(
 async def area_status_handler(message: Message) -> None:
     user = get_user_by_telegram_id(message.from_user.id)
 
-    if user is None or user["role"] not in {
-        "operator",
-        "engineer",
-        "admin",
-    }:
+    if (
+        user is None
+        or user["role"] not in {
+            "operator",
+            "engineer",
+            "admin",
+        }
+    ):
         await message.answer(
             "⛔ У вас нет доступа к этой функции."
         )
         return
 
-    if user["role"] == "operator":
+    # Оператор и администратор смотрят состояние
+    # только после начала своей рабочей сессии.
+    if user["role"] in {"operator", "admin"}:
         session = get_active_session(user["id"])
 
         if session is None:
@@ -179,9 +197,10 @@ async def frame_action_handler(
         callback.from_user.id
     )
 
-    if user is None or user["role"] != "operator":
+    if not has_operator_access(user):
         await callback.message.answer(
-            "⛔ Это действие доступно только оператору."
+            "⛔ Это действие доступно только оператору "
+            "или администратору."
         )
         return
 
@@ -202,7 +221,14 @@ async def frame_action_handler(
         return
 
     action = parts[1]
-    station_number = int(parts[2])
+
+    try:
+        station_number = int(parts[2])
+    except ValueError:
+        await callback.message.answer(
+            "Некорректный номер станции."
+        )
+        return
 
     try:
         if action == "load":
@@ -308,6 +334,7 @@ async def frame_action_handler(
             await callback.message.answer(
                 "Снятие рамы отменено."
             )
+            return
 
         else:
             await callback.message.answer(
@@ -338,7 +365,7 @@ async def frame_number_handler(
         message.from_user.id
     )
 
-    if user is None or user["role"] != "operator":
+    if not has_operator_access(user):
         await state.clear()
         await message.answer("⛔ Нет доступа.")
         return
