@@ -1,1 +1,1 @@
-worker: python reset_production_data.py
+worker: python bot.py
